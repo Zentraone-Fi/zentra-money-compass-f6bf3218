@@ -10,33 +10,73 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StakeRouteImport } from './routes/stake'
+import { Route as SwapRouteImport } from './routes/swap'
+import { Route as MarketsIndexRouteImport } from './routes/markets.index'
+import { Route as MarketsAssetIdRouteImport } from './routes/markets.$assetId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StakeRoute = StakeRouteImport.update({
+  id: '/stake',
+  path: '/stake',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SwapRoute = SwapRouteImport.update({
+  id: '/swap',
+  path: '/swap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketsIndexRoute = MarketsIndexRouteImport.update({
+  id: '/markets/',
+  path: '/markets/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketsAssetIdRoute = MarketsAssetIdRouteImport.update({
+  id: '/markets/$assetId',
+  path: '/markets/$assetId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/stake': typeof StakeRoute
+  '/swap': typeof SwapRoute
+  '/markets/$assetId': typeof MarketsAssetIdRoute
+  '/markets/': typeof MarketsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/stake': typeof StakeRoute
+  '/swap': typeof SwapRoute
+  '/markets/$assetId': typeof MarketsAssetIdRoute
+  '/markets': typeof MarketsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/stake': typeof StakeRoute
+  '/swap': typeof SwapRoute
+  '/markets/$assetId': typeof MarketsAssetIdRoute
+  '/markets/': typeof MarketsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/stake' | '/swap' | '/markets/$assetId' | '/markets/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/stake' | '/swap' | '/markets/$assetId' | '/markets'
+  id: '__root__' | '/' | '/stake' | '/swap' | '/markets/$assetId' | '/markets/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  StakeRoute: typeof StakeRoute
+  SwapRoute: typeof SwapRoute
+  MarketsAssetIdRoute: typeof MarketsAssetIdRoute
+  MarketsIndexRoute: typeof MarketsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +88,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stake': {
+      id: '/stake'
+      path: '/stake'
+      fullPath: '/stake'
+      preLoaderRoute: typeof StakeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/swap': {
+      id: '/swap'
+      path: '/swap'
+      fullPath: '/swap'
+      preLoaderRoute: typeof SwapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markets/': {
+      id: '/markets/'
+      path: '/markets'
+      fullPath: '/markets/'
+      preLoaderRoute: typeof MarketsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markets/$assetId': {
+      id: '/markets/$assetId'
+      path: '/markets/$assetId'
+      fullPath: '/markets/$assetId'
+      preLoaderRoute: typeof MarketsAssetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  StakeRoute: StakeRoute,
+  SwapRoute: SwapRoute,
+  MarketsAssetIdRoute: MarketsAssetIdRoute,
+  MarketsIndexRoute: MarketsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
