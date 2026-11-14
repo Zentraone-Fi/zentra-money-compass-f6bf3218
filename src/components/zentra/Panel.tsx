@@ -15,7 +15,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("panel p-4 sm:p-5", className)}>
+    <section className={cn("panel min-w-0 p-4 sm:p-5", className)}>
       {(title || action) && (
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3 px-1">
           {title && <h2 className="text-xl font-medium tracking-tight sm:text-[1.4rem]">{title}</h2>}

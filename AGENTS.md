@@ -28,3 +28,11 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project rules
+
+- Protocol logic lives in `src/lib/zentra/` (pure TS, decimal.js); UI in `src/components/zentra/`. Why: keeps risk/rate math testable and separate from presentation.
+- All amounts are decimal strings and all financial math uses `decimal.js`; JS numbers are for display only. Why: avoid floating-point drift in balances, interest and collateral.
+- The UI talks to the protocol only through the `LedgerAdapter` and `WalletAdapter` interfaces; the in-memory dev adapter is used only when `VITE_ZENTRA_ENV` is `development` and every record it produces is flagged `simulated`. Why: the Canton ledger is the source of truth and simulated data must never pass as live.
+- Frontend risk checks (`risk.ts`) are previews that mirror the Daml RiskEngine; the ledger adapter re-validates on confirmation. Why: liquidations and limits must be enforced by contracts, not the browser.
+- Risk rules are covered by `src/lib/zentra/risk.test.ts`; add a test there when a rule changes. Why: these are the protocol's safety guarantees.

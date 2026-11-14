@@ -17,6 +17,9 @@ export function YourSupplyPanel({ onAction }: { onAction: Open }) {
   const { state, session } = useZentra();
   return (
     <Panel title="Your Supply">
+      {!session ? (
+        <ConnectEmpty message="Connect your wallet to see what you've supplied." />
+      ) : (
       <div className="overflow-x-auto scrollbar-lime">
         <div className="min-w-[440px]">
           <div className={`${GRID} mb-2 px-3`}>
@@ -25,9 +28,7 @@ export function YourSupplyPanel({ onAction }: { onAction: Open }) {
             <ColHead>APY</ColHead>
             <span />
           </div>
-          {!session ? (
-            <ConnectEmpty message="Connect your wallet to see what you've supplied." />
-          ) : state.supplies.length === 0 ? (
+          {state.supplies.length === 0 ? (
             <EmptyRow>Nothing supplied yet.</EmptyRow>
           ) : (
             <ul className="space-y-2">
@@ -59,6 +60,7 @@ export function YourSupplyPanel({ onAction }: { onAction: Open }) {
           )}
         </div>
       </div>
+      )}
     </Panel>
   );
 }
@@ -78,6 +80,9 @@ export function YourBorrowPanel({ onAction }: { onAction: Open }) {
         ) : null
       }
     >
+      {!session ? (
+        <ConnectEmpty message="Connect your wallet to see your loans." />
+      ) : (
       <div className="overflow-x-auto scrollbar-lime">
         <div className="min-w-[440px]">
           <div className={`${GRID} mb-2 px-3`}>
@@ -86,9 +91,7 @@ export function YourBorrowPanel({ onAction }: { onAction: Open }) {
             <ColHead>APY</ColHead>
             <span />
           </div>
-          {!session ? (
-            <ConnectEmpty message="Connect your wallet to see your loans." />
-          ) : state.borrows.length === 0 ? (
+          {state.borrows.length === 0 ? (
             <EmptyRow>No open loans.</EmptyRow>
           ) : (
             <ul className="space-y-2">
@@ -120,6 +123,7 @@ export function YourBorrowPanel({ onAction }: { onAction: Open }) {
           )}
         </div>
       </div>
+      )}
     </Panel>
   );
 }

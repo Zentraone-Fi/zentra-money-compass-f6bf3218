@@ -13,12 +13,12 @@ export function ColHead({ children, sortable, active, onClick, className }: {
   onClick?: () => void;
   className?: string;
 }) {
-  if (!sortable) return <div className={cn("text-[13px] text-text-2", className)}>{children}</div>;
+  if (!sortable) return <div className={cn("whitespace-nowrap text-xs text-text-2", className)}>{children}</div>;
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn("inline-flex items-center gap-1 text-left text-[13px] text-text-2 hover:text-foreground", active && "text-foreground", className)}
+      className={cn("inline-flex items-center gap-1 whitespace-nowrap text-left text-xs text-text-2 hover:text-foreground", active && "text-foreground", className)}
     >
       {children}
       <ArrowDownUp className="size-3" aria-hidden />

@@ -84,13 +84,13 @@ export interface TxRecord {
   kind: TxKind;
   assetId: AssetId;
   amount: DecimalString;
-  counterAssetId?: AssetId;
-  counterAmount?: DecimalString;
+  counterAssetId?: AssetId | undefined;
+  counterAmount?: DecimalString | undefined;
   status: TxStatus;
   createdAt: number;
   updatedAt: number;
   simulated: boolean;
-  error?: string;
+  error?: string | undefined;
 }
 
 export interface LiquidityPool {

@@ -10,14 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as StakeRouteImport } from './routes/stake'
 import { Route as SwapRouteImport } from './routes/swap'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as MarketsIndexRouteImport } from './routes/markets.index'
 import { Route as MarketsAssetIdRouteImport } from './routes/markets.$assetId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StakeRoute = StakeRouteImport.update({
@@ -28,6 +47,11 @@ const StakeRoute = StakeRouteImport.update({
 const SwapRoute = SwapRouteImport.update({
   id: '/swap',
   path: '/swap',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketsIndexRoute = MarketsIndexRouteImport.update({
@@ -43,38 +67,82 @@ const MarketsAssetIdRoute = MarketsAssetIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
+  '/docs': typeof DocsRoute
+  '/privacy': typeof PrivacyRoute
   '/stake': typeof StakeRoute
   '/swap': typeof SwapRoute
+  '/terms': typeof TermsRoute
   '/markets/$assetId': typeof MarketsAssetIdRoute
   '/markets/': typeof MarketsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
+  '/docs': typeof DocsRoute
+  '/privacy': typeof PrivacyRoute
   '/stake': typeof StakeRoute
   '/swap': typeof SwapRoute
+  '/terms': typeof TermsRoute
   '/markets/$assetId': typeof MarketsAssetIdRoute
   '/markets': typeof MarketsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
+  '/docs': typeof DocsRoute
+  '/privacy': typeof PrivacyRoute
   '/stake': typeof StakeRoute
   '/swap': typeof SwapRoute
+  '/terms': typeof TermsRoute
   '/markets/$assetId': typeof MarketsAssetIdRoute
   '/markets/': typeof MarketsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/stake' | '/swap' | '/markets/$assetId' | '/markets/'
+  fullPaths:
+    | '/'
+    | '/contact'
+    | '/docs'
+    | '/privacy'
+    | '/stake'
+    | '/swap'
+    | '/terms'
+    | '/markets/$assetId'
+    | '/markets/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/stake' | '/swap' | '/markets/$assetId' | '/markets'
-  id: '__root__' | '/' | '/stake' | '/swap' | '/markets/$assetId' | '/markets/'
+  to:
+    | '/'
+    | '/contact'
+    | '/docs'
+    | '/privacy'
+    | '/stake'
+    | '/swap'
+    | '/terms'
+    | '/markets/$assetId'
+    | '/markets'
+  id:
+    | '__root__'
+    | '/'
+    | '/contact'
+    | '/docs'
+    | '/privacy'
+    | '/stake'
+    | '/swap'
+    | '/terms'
+    | '/markets/$assetId'
+    | '/markets/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContactRoute: typeof ContactRoute
+  DocsRoute: typeof DocsRoute
+  PrivacyRoute: typeof PrivacyRoute
   StakeRoute: typeof StakeRoute
   SwapRoute: typeof SwapRoute
+  TermsRoute: typeof TermsRoute
   MarketsAssetIdRoute: typeof MarketsAssetIdRoute
   MarketsIndexRoute: typeof MarketsIndexRoute
 }
@@ -86,6 +154,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stake': {
@@ -100,6 +189,13 @@ declare module '@tanstack/react-router' {
       path: '/swap'
       fullPath: '/swap'
       preLoaderRoute: typeof SwapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/markets/': {
@@ -121,8 +217,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContactRoute: ContactRoute,
+  DocsRoute: DocsRoute,
+  PrivacyRoute: PrivacyRoute,
   StakeRoute: StakeRoute,
   SwapRoute: SwapRoute,
+  TermsRoute: TermsRoute,
   MarketsAssetIdRoute: MarketsAssetIdRoute,
   MarketsIndexRoute: MarketsIndexRoute,
 }

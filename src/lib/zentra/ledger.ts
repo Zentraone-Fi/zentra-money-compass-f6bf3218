@@ -9,9 +9,9 @@ export interface TxRequest {
   kind: TxKind;
   assetId: AssetId;
   amount: string;
-  counterAssetId?: AssetId;
+  counterAssetId?: AssetId | undefined;
   /** Swap only: reject if output falls below this. */
-  minOut?: string;
+  minOut?: string | undefined;
 }
 
 export type Authorize = (tx: TxRecord) => Promise<boolean>;
