@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "events": {
+    "project.borrow_confirmed": {
+      "event_schema_version": 1,
+      "description": "A borrow transaction was confirmed on the ledger.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset",
+          "simulated"
+        ],
+        "properties": {
+          "asset": {
+            "type": "string"
+          },
+          "simulated": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.supply_confirmed": {
+      "event_schema_version": 1,
+      "description": "A supply transaction was confirmed on the ledger.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset",
+          "simulated"
+        ],
+        "properties": {
+          "asset": {
+            "type": "string"
+          },
+          "simulated": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.withdraw_confirmed": {
+      "event_schema_version": 1,
+      "description": "A withdrawal transaction was confirmed on the ledger.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset",
+          "simulated"
+        ],
+        "properties": {
+          "asset": {
+            "type": "string"
+          },
+          "simulated": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

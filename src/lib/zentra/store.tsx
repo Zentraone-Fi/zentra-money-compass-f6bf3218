@@ -89,7 +89,18 @@ export function ZentraProvider({ children }: { children: ReactNode }) {
       const toastId = toast.loading(title, { description: TX_STATUS_LABEL.draft });
       const rec = await ledger.submit(req, (tx) => wallet.authorize(tx), (tx) => {
         const sim = tx.simulated ? " · simulated" : "";
-        if (tx.status === "confirmed") toast.success(title, { id: toastId, description: `Confirmed on ledger${sim}` });
+        if (tx.status === "confirmed") {
+          toast.success(title, { id: toastId, description: `Confirmed on ledger${sim}` });
+          if (req.kind === "swap") {
+            window.__lovableEvents?.track?.("project.swap_confirmed", {
+              from_asset: req.assetId,
+              to_asset: req.counterAssetId ?? "",
+              simulated: tx.simulated,
+            });
+          } else if (req.kind === "supply" || req.kind === "withdraw" || req.kind === "borrow" || req.kind === "repay") {
+            window.__lovableEvents?.track?.(`project.${req.kind}_confirmed`, { asset: req.assetId, simulated: tx.simulated });
+          }
+        }
         else if (tx.status === "failed" || tx.status === "rejected" || tx.status === "expired")
           toast.error(title, { id: toastId, description: `${TX_STATUS_LABEL[tx.status]}: ${tx.error ?? ""}` });
         else toast.loading(title, { id: toastId, description: `${TX_STATUS_LABEL[tx.status]}${sim}` });
