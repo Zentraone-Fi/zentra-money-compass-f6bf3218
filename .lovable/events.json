@@ -25,6 +25,30 @@
         }
       }
     },
+    "project.repay_confirmed": {
+      "event_schema_version": 1,
+      "description": "A repay transaction was confirmed on the ledger.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset",
+          "simulated"
+        ],
+        "properties": {
+          "asset": {
+            "type": "string"
+          },
+          "simulated": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "project.supply_confirmed": {
       "event_schema_version": 1,
       "description": "A supply transaction was confirmed on the ledger.",
@@ -41,6 +65,34 @@
         ],
         "properties": {
           "asset": {
+            "type": "string"
+          },
+          "simulated": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.swap_confirmed": {
+      "event_schema_version": 1,
+      "description": "A swap transaction was confirmed on the ledger.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from_asset",
+          "to_asset",
+          "simulated"
+        ],
+        "properties": {
+          "from_asset": {
+            "type": "string"
+          },
+          "to_asset": {
             "type": "string"
           },
           "simulated": {
