@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, type Context, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { fmt } from "./decimal";
@@ -18,7 +18,10 @@ interface ZentraContextValue {
   submit: (req: TxRequest) => Promise<TxRecord | null>;
 }
 
-const ZentraContext = createContext<ZentraContextValue | null>(null);
+// Keep one context instance across hot reloads: a re-evaluated module would otherwise create a
+// new context that consumers read while the mounted provider still serves the old one.
+const contextHost = globalThis as typeof globalThis & { __zentraContext?: Context<ZentraContextValue | null> };
+const ZentraContext = (contextHost.__zentraContext ??= createContext<ZentraContextValue | null>(null));
 
 export const TX_STATUS_LABEL: Record<TxStatus, string> = {
   draft: "Draft",
