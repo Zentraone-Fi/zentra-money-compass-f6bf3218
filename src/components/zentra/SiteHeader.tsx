@@ -21,6 +21,7 @@ const NAV = [
   { to: "/markets", label: "Markets", exact: false },
   { to: "/stake", label: "Stake", exact: false },
   { to: "/swap", label: "Swap", exact: false },
+  { to: "/quests", label: "Quests", exact: false },
   { to: "/docs", label: "Docs", exact: false },
 ] as const;
 
