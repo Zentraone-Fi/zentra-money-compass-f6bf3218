@@ -3,7 +3,7 @@ import { BookOpen, Globe } from "lucide-react";
 import { LINKS } from "@/lib/zentra/env";
 
 const svg = (d: string) =>
-  function Icon({ className = "size-6" }: { className?: string }) {
+  function Icon({ className = "size-6" }: { className?: string | undefined }) {
     return (
       <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
         <path d={d} />

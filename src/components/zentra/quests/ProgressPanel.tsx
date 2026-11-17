@@ -40,7 +40,10 @@ export function ProgressPanel({
   inviteCode: string | null;
 }) {
   const copy = async () => {
-    if (!inviteCode) return toast.error("Connect a wallet to get your referral link");
+    if (!inviteCode) {
+      toast.error("Connect a wallet to get your referral link");
+      return;
+    }
     const url = `${window.location.origin}/quests?ref=${inviteCode}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -70,7 +73,7 @@ export function ProgressPanel({
         </div>
       </header>
 
-      <div className="grid gap-4 px-3.5 py-3 md:grid-cols-[auto_auto_minmax(0,1fr)_auto_minmax(0,250px)] md:items-center md:gap-0">
+      <div className="grid gap-4 px-3.5 py-3 md:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] md:items-center md:gap-0">
         <div className="grid grid-cols-2 gap-6 md:pr-8">
           <Stat value={xp > 0 ? xp.toLocaleString("en-US") : null} unit="XP" label="Total XP" />
           <Stat value={rank ? `#${rank}` : null} label="Your Rank" />
@@ -83,8 +86,8 @@ export function ProgressPanel({
               <span
                 key={i}
                 className={cn(
-                  "h-full min-w-0 flex-1 rounded-[2px] border transition-colors duration-500",
-                  i < completed ? "border-lime/70 bg-lime/80" : "border-foreground/20 bg-foreground/[0.04]",
+                  "h-full w-[5px] shrink-0 rounded-[1.5px] transition-colors duration-500",
+                  i < completed ? "bg-lime shadow-[0_0_8px_-1px_var(--lime)]" : "bg-foreground/15",
                 )}
               />
             ))}
@@ -124,7 +127,7 @@ export function ProgressPanel({
               <div className="text-[11px]">
                 Earn <span className="text-lg font-light text-gold">10%</span>
               </div>
-              <div className="truncate text-[10.5px] font-semibold">of your friends' quest XP</div>
+              <div className="whitespace-nowrap text-[10.5px] font-semibold">of your friends' quest XP</div>
             </div>
           </div>
           <div className="shrink-0 text-right">

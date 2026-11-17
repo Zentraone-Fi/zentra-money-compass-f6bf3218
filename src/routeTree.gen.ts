@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as QuestsRouteImport } from './routes/quests'
 import { Route as StakeRouteImport } from './routes/stake'
 import { Route as SwapRouteImport } from './routes/swap'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -37,6 +38,11 @@ const DocsRoute = DocsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestsRoute = QuestsRouteImport.update({
+  id: '/quests',
+  path: '/quests',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StakeRoute = StakeRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/docs': typeof DocsRoute
   '/privacy': typeof PrivacyRoute
+  '/quests': typeof QuestsRoute
   '/stake': typeof StakeRoute
   '/swap': typeof SwapRoute
   '/terms': typeof TermsRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/docs': typeof DocsRoute
   '/privacy': typeof PrivacyRoute
+  '/quests': typeof QuestsRoute
   '/stake': typeof StakeRoute
   '/swap': typeof SwapRoute
   '/terms': typeof TermsRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/docs': typeof DocsRoute
   '/privacy': typeof PrivacyRoute
+  '/quests': typeof QuestsRoute
   '/stake': typeof StakeRoute
   '/swap': typeof SwapRoute
   '/terms': typeof TermsRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/docs'
     | '/privacy'
+    | '/quests'
     | '/stake'
     | '/swap'
     | '/terms'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/docs'
     | '/privacy'
+    | '/quests'
     | '/stake'
     | '/swap'
     | '/terms'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/docs'
     | '/privacy'
+    | '/quests'
     | '/stake'
     | '/swap'
     | '/terms'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DocsRoute: typeof DocsRoute
   PrivacyRoute: typeof PrivacyRoute
+  QuestsRoute: typeof QuestsRoute
   StakeRoute: typeof StakeRoute
   SwapRoute: typeof SwapRoute
   TermsRoute: typeof TermsRoute
@@ -175,6 +188,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/quests': {
+      id: '/quests'
+      path: '/quests'
+      fullPath: '/quests'
+      preLoaderRoute: typeof QuestsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stake': {
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DocsRoute: DocsRoute,
   PrivacyRoute: PrivacyRoute,
+  QuestsRoute: QuestsRoute,
   StakeRoute: StakeRoute,
   SwapRoute: SwapRoute,
   TermsRoute: TermsRoute,

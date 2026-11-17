@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { SimBadge } from "../Panel";
 import { Telegram, XLogo } from "../SocialIcons";
 
-const PROVIDERS: { id: SocialPlatform; label: string; Icon: (p: { className?: string }) => ReactNode }[] = [
+const PROVIDERS: { id: SocialPlatform; label: string; Icon: (p: { className?: string | undefined }) => ReactNode }[] = [
   { id: "telegram", label: "Telegram", Icon: ({ className }) => <Telegram className={className} /> },
   { id: "x", label: "X", Icon: ({ className }) => <XLogo className={className} /> },
 ];
