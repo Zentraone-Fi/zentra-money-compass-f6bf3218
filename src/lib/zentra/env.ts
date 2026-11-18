@@ -11,6 +11,7 @@ export const LINKS = {
   github: "https://github.com/Zentraone-Fi",
   website: "https://zentraone.xyz/",
   telegram: "https://t.me/zentra_hq",
+  support: "https://t.me/Phil_zentra",
   x: "https://x.com/zentra_hq",
   linkedin: "https://www.linkedin.com/company/zentra-one/",
 } as const;

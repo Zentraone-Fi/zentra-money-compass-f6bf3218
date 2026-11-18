@@ -2,7 +2,7 @@ import { ArrowLeftRight, BookOpen, BookText, HandCoins, ImageIcon, PenLine, Pigg
 
 import type { QuestIconKind } from "@/lib/zentra/quests";
 import { cn } from "@/lib/utils";
-import { GitHub, LinkedIn, Telegram, XLogo } from "../SocialIcons";
+import { GitHub, LinkedIn, Telegram, WhatsApp, XLogo } from "../SocialIcons";
 
 const LUCIDE = {
   docs: BookOpen,
@@ -20,6 +20,7 @@ export function QuestIcon({ kind, className }: { kind: QuestIconKind; className?
   let icon;
   if (kind === "x") icon = <XLogo className="size-4" />;
   else if (kind === "telegram") icon = <Telegram className={inner} />;
+  else if (kind === "whatsapp") icon = <WhatsApp className={inner} />;
   else if (kind === "linkedin") icon = <LinkedIn className={inner} />;
   else if (kind === "github") icon = <GitHub className={inner} />;
   else {

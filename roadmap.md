@@ -1,6 +1,7 @@
 # ZENTRA roadmap
 
 ## Done
+- [x] Updated the Telegram quest and Support links, and added the 20 XP WhatsApp Channel quest
 - [x] Screenshot-faithful dashboard (Your Supply / Your Borrow / Supply Assets / Borrow Assets), portfolio overview, activity history with filters
 - [x] Supply, withdraw, borrow, repay flows with health-factor/LTV previews and tx lifecycle
 - [x] Markets list + market detail (rate curve, risk params)

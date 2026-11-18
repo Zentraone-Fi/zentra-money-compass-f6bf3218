@@ -66,7 +66,7 @@ export function ProgressPanel({
             </a>
           </Button>
           <Button asChild variant="outline" className="h-6 gap-1.5 rounded-[5px] border-lime/70 bg-lime/5 px-2.5 text-[11px] hover:bg-lime/10">
-            <a href={LINKS.telegram} target="_blank" rel="noreferrer">
+            <a href={LINKS.support} target="_blank" rel="noreferrer">
               Support <ExternalLink className="!size-3" />
             </a>
           </Button>

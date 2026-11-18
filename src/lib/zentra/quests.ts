@@ -9,7 +9,7 @@ import type { TxKind, TxRecord } from "./types";
 export type QuestCategory = "onchain" | "social" | "creative";
 export type QuestFrequency = "one-time" | "daily";
 export type SocialPlatform = "x" | "telegram";
-export type QuestIconKind = "x" | "telegram" | "linkedin" | "github" | "docs" | "supply" | "borrow" | "repay" | "swap" | "pen" | "image" | "book";
+export type QuestIconKind = "x" | "telegram" | "whatsapp" | "linkedin" | "github" | "docs" | "supply" | "borrow" | "repay" | "swap" | "pen" | "image" | "book";
 
 export type QuestVerification =
   /** Needs the linked platform account; verified by the quest service against that account. */
@@ -61,7 +61,21 @@ export const QUESTS: Quest[] = [
     xp: 20,
     icon: "telegram",
     description: "Join @zentra_hq on Telegram using your connected Telegram account. Verify your membership to claim your XP.",
-    verification: { type: "social", platform: "telegram", url: "https://t.me/zentra_hq", action: "Join group" },
+    verification: { type: "social", platform: "telegram", url: "http://t.me/zentra_hq", action: "Join group" },
+  },
+  {
+    id: "whatsapp-channel",
+    title: "Join the ZENTRA WhatsApp Channel",
+    category: "social",
+    frequency: "one-time",
+    xp: 20,
+    icon: "whatsapp",
+    description: "Join the official ZENTRA WhatsApp Channel for protocol announcements and community updates.",
+    verification: {
+      type: "visit",
+      url: "https://whatsapp.com/channel/0029VbE8sBVJkK7AqNGbAh3a",
+      action: "Join channel",
+    },
   },
   {
     id: "x-follow",

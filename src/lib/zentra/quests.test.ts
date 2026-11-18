@@ -12,6 +12,7 @@ import {
   totalAllocatedShare,
   totalQuestXp,
 } from "./quests";
+import { LINKS } from "./env";
 import type { TxRecord } from "./types";
 
 const DAY = 24 * 3600 * 1000;
@@ -21,6 +22,24 @@ const q = (id: string) => {
   if (!quest) throw new Error(id);
   return quest;
 };
+
+describe("official quest links", () => {
+  it("uses the requested Telegram join URL", () => {
+    expect(q("tg-join").verification).toMatchObject({ url: "http://t.me/zentra_hq" });
+  });
+
+  it("uses the requested Support URL", () => {
+    expect(LINKS.support).toBe("https://t.me/Phil_zentra");
+  });
+
+  it("adds the WhatsApp Channel as a 20 XP social quest", () => {
+    expect(q("whatsapp-channel")).toMatchObject({
+      category: "social",
+      xp: 20,
+      verification: { type: "visit", url: "https://whatsapp.com/channel/0029VbE8sBVJkK7AqNGbAh3a" },
+    });
+  });
+});
 
 describe("quest XP", () => {
   it("awards a one-time quest's XP only once", () => {
