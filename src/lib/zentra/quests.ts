@@ -9,6 +9,7 @@ import type { TxKind, TxRecord } from "./types";
 export type QuestCategory = "onchain" | "social" | "creative";
 export type QuestFrequency = "one-time" | "daily";
 export type SocialPlatform = "x" | "telegram";
+export type LinkedAccounts = Record<SocialPlatform, string | null>;
 export type QuestIconKind = "x" | "telegram" | "whatsapp" | "linkedin" | "github" | "docs" | "supply" | "borrow" | "repay" | "swap" | "pen" | "image" | "book";
 
 export type QuestVerification =
@@ -211,7 +212,7 @@ export const QUESTS: Quest[] = [
 
 export const questById = (id: string) => QUESTS.find((q) => q.id === id);
 
-const utcDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+export const utcDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 /** Whether the quest can be completed (again) right now. */
 export function isQuestAvailable(quest: Quest, entry: QuestProgressEntry | undefined, now: number) {
@@ -254,6 +255,68 @@ export function totalQuestXp(progress: QuestProgress, quests: Quest[] = QUESTS) 
   }, 0);
 }
 
+/* ---------- Account-backed quest service rules ---------- */
+
+/** Claim slot a completion fills: "once" for one-time quests, the UTC day for daily quests. One claim per slot. */
+export function claimPeriod(quest: Quest, now: number) {
+  return quest.frequency === "daily" ? utcDay(now) : "once";
+}
+
+export type ClaimCheck = { ok: true; period: string; xp: number } | { ok: false; reason: string };
+
+/**
+ * Server-side gate for an XP claim. Social and ledger checks are simulated in development only;
+ * outside development nothing can be claimed until real verification is wired in.
+ */
+export function checkClaim(
+  quest: Quest | undefined,
+  ctx: { simulated: boolean; linked: LinkedAccounts; ledgerTx?: LedgerEvidence | undefined; now: number },
+): ClaimCheck {
+  if (!quest) return { ok: false, reason: "Unknown quest" };
+  const v = quest.verification;
+  if (v.type === "submission") return { ok: false, reason: "Creative quests are reviewed before XP is awarded" };
+  if (!ctx.simulated) return { ok: false, reason: "Verification opens at launch" };
+  if (v.type === "social" && !ctx.linked[v.platform]) {
+    return { ok: false, reason: `Link your ${v.platform === "x" ? "X" : "Telegram"} account first` };
+  }
+  if (v.type === "ledger" && !(ctx.ledgerTx && findVerifyingTx(quest, [ctx.ledgerTx], ctx.now))) {
+    return { ok: false, reason: `No confirmed ${v.txKind} found${quest.frequency === "daily" ? " today" : ""}` };
+  }
+  return { ok: true, period: claimPeriod(quest, ctx.now), xp: quest.xp };
+}
+
+export interface ClaimRecord {
+  quest_id: string;
+  claimed_at: string;
+}
+
+export interface SubmissionRecord {
+  quest_id: string;
+  url: string;
+  status: "pending" | "approved" | "rejected";
+  submitted_at: string;
+}
+
+/** Rebuilds the board's progress from stored claims and pending submissions. */
+export function progressFromRecords(claims: ClaimRecord[], submissions: SubmissionRecord[]): QuestProgress {
+  const progress: QuestProgress = {};
+  for (const c of claims) {
+    const at = Date.parse(c.claimed_at);
+    const prev = progress[c.quest_id];
+    progress[c.quest_id] = {
+      status: "completed",
+      completions: (prev?.completions ?? 0) + 1,
+      lastCompletedAt: Math.max(prev?.lastCompletedAt ?? 0, at),
+    };
+  }
+  for (const s of submissions) {
+    if (s.status === "pending" && !progress[s.quest_id]) {
+      progress[s.quest_id] = { status: "pending_review", completions: 0, lastCompletedAt: Date.parse(s.submitted_at), submission: s.url };
+    }
+  }
+  return progress;
+}
+
 /** Referral XP is 10% of referred friends' quest XP, rounded down to whole XP. */
 export function referralXp(friendsQuestXp: number[]) {
   const total = friendsQuestXp.reduce((a, b) => a + Math.max(0, Math.floor(b)), 0);
@@ -266,7 +329,9 @@ export function completedQuestCount(progress: QuestProgress, quests: Quest[] = Q
 }
 
 /** The ledger quest's verifying tx: confirmed, of the right kind, and (for daily) from today. */
-export function findVerifyingTx(quest: Quest, txs: TxRecord[], now: number) {
+export type LedgerEvidence = Pick<TxRecord, "id" | "kind" | "status" | "updatedAt">;
+
+export function findVerifyingTx<T extends LedgerEvidence>(quest: Quest, txs: T[], now: number): T | undefined {
   if (quest.verification.type !== "ledger") return undefined;
   const kind = quest.verification.txKind;
   return txs.find(
