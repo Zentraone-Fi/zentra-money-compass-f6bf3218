@@ -41,7 +41,7 @@ export function ProgressPanel({
 }) {
   const copy = async () => {
     if (!inviteCode) {
-      toast.error("Connect a wallet to get your referral link");
+      toast.error("Sign in to get your referral link");
       return;
     }
     const url = `${window.location.origin}/quests?ref=${inviteCode}`;

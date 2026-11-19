@@ -1,7 +1,7 @@
 import { Puzzle } from "lucide-react";
 import { useState } from "react";
 
-import { QUESTS, type QuestCategory, type QuestProgress } from "@/lib/zentra/quests";
+import { QUESTS, type LedgerEvidence, type QuestCategory, type QuestProgress } from "@/lib/zentra/quests";
 import { cn } from "@/lib/utils";
 import { QuestCard, type QuestCardProps } from "./QuestCard";
 
@@ -20,7 +20,11 @@ export function QuestBoard({
   onComplete,
   onSubmit,
   ...shared
-}: Shared & { progress: QuestProgress; onComplete: (id: string) => void; onSubmit: (id: string, url: string) => void }) {
+}: Shared & {
+  progress: QuestProgress;
+  onComplete: (id: string, tx?: LedgerEvidence) => Promise<void>;
+  onSubmit: (id: string, url: string) => Promise<void>;
+}) {
   const [tab, setTab] = useState<Tab>("all");
   const [open, setOpen] = useState<string | null>("x-follow");
   const list = QUESTS.filter((q) => tab === "all" || q.category === tab);
@@ -73,10 +77,10 @@ export function QuestBoard({
             {...shared}
             quest={q}
             entry={progress[q.id]}
-            blurred={!shared.hasWallet && i >= 2}
+            blurred={!shared.signedIn && i >= 2}
             expanded={open === q.id}
             onToggle={() => setOpen((o) => (o === q.id ? null : q.id))}
-            onComplete={() => onComplete(q.id)}
+            onComplete={(tx) => onComplete(q.id, tx)}
             onSubmit={(url) => onSubmit(q.id, url)}
           />
         ))}

@@ -1,5 +1,6 @@
-import { Link } from "@tanstack/react-router";
-import { ChevronDown, LogOut, Menu } from "lucide-react";
+import { Link, useLocation } from "@tanstack/react-router";
+import { ChevronDown, LogOut, Menu, UserRound } from "lucide-react";
+import { toast } from "sonner";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useAccount } from "@/hooks/use-account";
 import { useZentra } from "@/lib/zentra/store";
 import { Logo } from "./Logo";
 import { SimBadge } from "./Panel";
@@ -60,6 +62,52 @@ function WalletButton() {
   );
 }
 
+function AccountButton({ onNavigate }: { onNavigate?: () => void }) {
+  const { user, ready, signOut } = useAccount();
+  const { pathname } = useLocation();
+  if (!ready) return <span className="inline-block h-11 w-[88px]" aria-hidden />;
+  if (!user) {
+    return (
+      <Button asChild variant="ghost" size="xl" className="px-4 text-foreground/90">
+        <Link to="/auth" search={pathname === "/auth" ? {} : { redirect: pathname }} onClick={onNavigate}>
+          Sign in
+        </Link>
+      </Button>
+    );
+  }
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="xl" className="gap-2 px-3" aria-label="Account">
+          <UserRound className="size-5" />
+          <ChevronDown className="size-4 text-text-2" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60 border-panel-border bg-popover">
+        <DropdownMenuLabel className="space-y-0.5">
+          <div className="text-sm">ZENTRA account</div>
+          <div className="truncate text-xs font-normal text-text-2">{user.email}</div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/quests" onClick={onNavigate}>
+            My quests
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={async () => {
+            await signOut();
+            onNavigate?.();
+            toast.message("Signed out");
+          }}
+        >
+          <LogOut className="size-4" /> Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   return (
@@ -81,7 +129,8 @@ export function SiteHeader() {
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden sm:block">
+          <div className="hidden items-center gap-2 sm:flex">
+            <AccountButton />
             <WalletButton />
           </div>
           <Sheet open={open} onOpenChange={setOpen}>
@@ -107,7 +156,8 @@ export function SiteHeader() {
                   </Link>
                 ))}
               </nav>
-              <div className="mt-6 px-4 sm:hidden">
+              <div className="mt-6 flex flex-col items-start gap-2 px-4 sm:hidden">
+                <AccountButton onNavigate={() => setOpen(false)} />
                 <WalletButton />
               </div>
             </SheetContent>

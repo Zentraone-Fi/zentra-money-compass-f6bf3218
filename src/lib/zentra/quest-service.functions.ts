@@ -163,7 +163,14 @@ export const updateQuestProfile = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("profiles").update(data).eq("id", context.userId);
+    const patch = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)) as {
+      display_name?: string;
+      x_handle?: string | null;
+      telegram_handle?: string | null;
+      wallet_party_id?: string | null;
+    };
+    if (Object.keys(patch).length === 0) return { ok: true as const };
+    const { error } = await context.supabase.from("profiles").update(patch).eq("id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });

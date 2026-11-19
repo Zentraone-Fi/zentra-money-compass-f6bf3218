@@ -56,7 +56,18 @@ function Row({ e }: { e: RankedEntry }) {
   );
 }
 
-export function Leaderboard({ entries, live }: { entries: RankedEntry[]; live: boolean }) {
+export function Leaderboard({
+  entries,
+  live,
+  simulated,
+  loading,
+}: {
+  entries: RankedEntry[];
+  live: boolean;
+  /** XP on the board was verified by development stand-ins, not real checks. */
+  simulated: boolean;
+  loading?: boolean;
+}) {
   const [tab, setTab] = useState<"board" | "prizes">("board");
   const [shown, setShown] = useState(PAGE);
   const you = entries.find((e) => e.isYou);
@@ -99,7 +110,7 @@ export function Leaderboard({ entries, live }: { entries: RankedEntry[]; live: b
               )}
               {live ? "Live" : "Season not started"}
             </span>
-            <SimBadge />
+            {simulated && <SimBadge />}
           </div>
           <div className="grid grid-cols-[24px_minmax(0,1fr)_52px_78px] gap-2 border-b border-panel-border/60 px-3 py-2 text-[10.5px] text-text-2">
             <span className="text-center">#</span>
@@ -108,7 +119,9 @@ export function Leaderboard({ entries, live }: { entries: RankedEntry[]; live: b
             <span className="text-right">Est. ZNT</span>
           </div>
           {entries.length === 0 ? (
-            <p className="px-3 py-8 text-center text-xs text-text-2">The leaderboard opens when Season 1 starts.</p>
+            <p className="px-3 py-8 text-center text-xs text-text-2">
+              {loading ? "Loading leaderboard…" : live ? "No XP earned yet. Complete a quest to be the first explorer on the board." : "The leaderboard opens when Season 1 starts."}
+            </p>
           ) : (
             <ol className="scrollbar-lime max-h-[306px] overflow-y-auto" aria-label="Leaderboard">
               {entries.slice(0, shown).map((e) => (

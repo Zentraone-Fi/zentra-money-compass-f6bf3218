@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   QUESTS,
+  checkClaim,
+  claimPeriod,
   completeQuest,
   estimatedPrizeZnt,
   findVerifyingTx,
+  progressFromRecords,
   questById,
   rankLeaderboard,
   referralXp,
@@ -104,5 +107,55 @@ describe("leaderboard and prizes", () => {
 
   it("has unique quest ids", () => {
     expect(new Set(QUESTS.map((x) => x.id)).size).toBe(QUESTS.length);
+  });
+});
+
+describe("account-backed quest claims", () => {
+  const none = { x: null, telegram: null };
+  const ctx = (over: Partial<Parameters<typeof checkClaim>[1]> = {}) => ({ simulated: true, linked: none, now: T0, ...over });
+
+  it("one-time quests have a single claim slot", () => {
+    expect(claimPeriod(q("x-follow"), T0)).toBe("once");
+    expect(claimPeriod(q("x-follow"), T0 + 5 * DAY)).toBe("once");
+  });
+
+  it("daily quests get one claim slot per UTC day", () => {
+    expect(claimPeriod(q("daily-swap"), T0)).toBe("2026-11-16");
+    expect(claimPeriod(q("daily-swap"), T0 + DAY)).toBe("2026-11-17");
+  });
+
+  it("social quests need the linked account before XP is saved", () => {
+    expect(checkClaim(q("x-follow"), ctx())).toEqual({ ok: false, reason: "Link your X account first" });
+    expect(checkClaim(q("x-follow"), ctx({ linked: { x: "zentra_fan", telegram: null } }))).toEqual({ ok: true, period: "once", xp: 20 });
+  });
+
+  it("ledger quests need a confirmed transaction of the right kind from today", () => {
+    const swap = { id: "t1", kind: "swap" as const, status: "confirmed" as const, updatedAt: T0 };
+    expect(checkClaim(q("daily-swap"), ctx({ ledgerTx: swap }))).toEqual({ ok: true, period: "2026-11-16", xp: 10 });
+    expect(checkClaim(q("daily-swap"), ctx()).ok).toBe(false);
+    expect(checkClaim(q("daily-swap"), ctx({ ledgerTx: { ...swap, status: "pending_confirmation" } })).ok).toBe(false);
+    expect(checkClaim(q("daily-swap"), ctx({ ledgerTx: { ...swap, updatedAt: T0 - DAY } })).ok).toBe(false);
+  });
+
+  it("creative quests never award XP through a claim", () => {
+    expect(checkClaim(q("creative-thread"), ctx()).ok).toBe(false);
+  });
+
+  it("nothing can be claimed outside development until real verification exists", () => {
+    expect(checkClaim(q("docs-read"), ctx({ simulated: false }))).toEqual({ ok: false, reason: "Verification opens at launch" });
+  });
+
+  it("rebuilds progress from saved claims: daily completions add up, pending submissions earn nothing", () => {
+    const progress = progressFromRecords(
+      [
+        { quest_id: "x-follow", claimed_at: new Date(T0).toISOString() },
+        { quest_id: "daily-swap", claimed_at: new Date(T0).toISOString() },
+        { quest_id: "daily-swap", claimed_at: new Date(T0 + DAY).toISOString() },
+      ],
+      [{ quest_id: "creative-meme", url: "https://x.com/a/status/1", status: "pending", submitted_at: new Date(T0).toISOString() }],
+    );
+    expect(progress["daily-swap"]).toMatchObject({ status: "completed", completions: 2, lastCompletedAt: T0 + DAY });
+    expect(progress["creative-meme"]?.status).toBe("pending_review");
+    expect(totalQuestXp(progress)).toBe(20 + 10 * 2);
   });
 });

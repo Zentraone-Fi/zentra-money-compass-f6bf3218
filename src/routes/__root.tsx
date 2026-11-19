@@ -15,6 +15,7 @@ import { ConnectWalletDialog } from "@/components/zentra/ConnectWalletDialog";
 import { DevBanner } from "@/components/zentra/DevBanner";
 import { SiteFooter } from "@/components/zentra/SiteFooter";
 import { SiteHeader } from "@/components/zentra/SiteHeader";
+import { AccountProvider } from "@/hooks/use-account";
 import { ZentraProvider } from "@/lib/zentra/store";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -133,6 +134,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <AccountProvider>
       <ZentraProvider>
         <div className="flex min-h-screen flex-col">
           <DevBanner />
@@ -146,6 +148,7 @@ function RootComponent() {
         <ConnectWalletDialog />
         <Toaster position="bottom-right" theme="dark" />
       </ZentraProvider>
+      </AccountProvider>
     </QueryClientProvider>
   );
 }

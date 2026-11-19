@@ -5,12 +5,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { IS_SIMULATED } from "@/lib/zentra/env";
-import type { LinkedAccounts } from "@/lib/zentra/quest-store";
 import {
   QUEST_CATEGORY_LABEL,
   findVerifyingTx,
   isQuestAvailable,
   isQuestDone,
+  type LedgerEvidence,
+  type LinkedAccounts,
   type Quest,
   type QuestProgressEntry,
   type SocialPlatform,
@@ -60,26 +61,29 @@ function StatusBadge({ badge }: { badge: Badge }) {
 export interface QuestCardProps {
   quest: Quest;
   entry: QuestProgressEntry | undefined;
+  signedIn: boolean;
   hasWallet: boolean;
   blurred: boolean;
   expanded: boolean;
   onToggle: () => void;
   linked: LinkedAccounts;
   txs: TxRecord[];
+  onSignIn: () => void;
   onConnectWallet: () => void;
   onLink: (p: SocialPlatform) => void;
-  onComplete: () => void;
-  onSubmit: (url: string) => void;
+  /** Saves the claim to the account; resolves once the quest service has answered. */
+  onComplete: (tx?: LedgerEvidence) => Promise<void>;
+  onSubmit: (url: string) => Promise<void>;
 }
 
 export function QuestCard(props: QuestCardProps) {
-  const { quest, entry, hasWallet, blurred, expanded, onToggle, linked } = props;
+  const { quest, entry, signedIn, hasWallet, blurred, expanded, onToggle, linked } = props;
   const now = Date.now();
   const done = isQuestDone(quest, entry, now);
   const v = quest.verification;
   const needsLink = v.type === "social" && !linked[v.platform];
   const badge: Badge =
-    entry?.status === "pending_review" ? "review" : done ? "done" : !hasWallet || needsLink ? "locked" : "open";
+    entry?.status === "pending_review" ? "review" : done ? "done" : !signedIn || needsLink || (v.type === "ledger" && !hasWallet) ? "locked" : "open";
   const bodyId = `quest-${quest.id}`;
 
   return (
@@ -93,7 +97,7 @@ export function QuestCard(props: QuestCardProps) {
         type="button"
         aria-expanded={expanded}
         aria-controls={bodyId}
-        onClick={blurred ? props.onConnectWallet : onToggle}
+        onClick={blurred ? props.onSignIn : onToggle}
         className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left sm:px-3.5"
       >
         <QuestIcon kind={quest.icon} className={cn(blurred && "blur-[3px]")} />
@@ -105,7 +109,7 @@ export function QuestCard(props: QuestCardProps) {
             <span className="text-gold">{quest.frequency}</span>
           </span>
         </span>
-        {blurred && <span className="sr-only">Connect a wallet to see this quest</span>}
+        {blurred && <span className="sr-only">Sign in to see this quest</span>}
         <span className="flex shrink-0 items-center gap-3 sm:gap-5">
           <span className="hidden sm:inline-flex">
             <StatusBadge badge={badge} />
@@ -158,12 +162,14 @@ const actionBtn = "h-8 min-w-[150px] gap-2 rounded-[5px] px-5 text-xs";
 function QuestActions({
   quest,
   entry,
+  signedIn,
   hasWallet,
   linked,
   txs,
   done,
   needsLink,
   now,
+  onSignIn,
   onConnectWallet,
   onLink,
   onComplete,
@@ -185,10 +191,10 @@ function QuestActions({
       </span>
     );
   }
-  if (!hasWallet) {
+  if (!signedIn) {
     return (
-      <Button variant="action" className={actionBtn} onClick={onConnectWallet}>
-        <Lock /> Connect wallet
+      <Button variant="action" className={actionBtn} onClick={onSignIn}>
+        <Lock /> Sign in to start
       </Button>
     );
   }
@@ -207,15 +213,13 @@ function QuestActions({
     );
   }
 
-  const verify = (check: () => boolean, failMsg: string) => {
+  const verify = async (tx?: LedgerEvidence) => {
     setBusy(true);
-    setTimeout(() => {
+    try {
+      await onComplete(tx);
+    } finally {
       setBusy(false);
-      if (check()) {
-        onComplete();
-        toast.success(`+${quest.xp} XP earned`, { description: `${quest.title} · simulated verification` });
-      } else toast.error("Not verified yet", { description: failMsg });
-    }, 1100);
+    }
   };
 
   if (v.type === "social" || v.type === "visit") {
@@ -231,12 +235,20 @@ function QuestActions({
           className={actionBtn}
           disabled={!visited || busy}
           title={visited ? undefined : "Open the link first"}
-          onClick={() => verify(() => true, "")}
+          onClick={() => void verify()}
         >
           {busy ? <Loader2 className="animate-spin" /> : <Check />}
           {v.type === "visit" ? "Claim XP" : `Verify${linked[v.platform] ? ` @${linked[v.platform]}` : ""}`}
         </Button>
       </div>
+    );
+  }
+
+  if (v.type === "ledger" && !hasWallet) {
+    return (
+      <Button variant="action" className={actionBtn} onClick={onConnectWallet}>
+        <Lock /> Connect wallet
+      </Button>
     );
   }
 
@@ -250,12 +262,16 @@ function QuestActions({
           variant="action"
           className={actionBtn}
           disabled={busy}
-          onClick={() =>
-            verify(
-              () => !!findVerifyingTx(quest, txs, Date.now()),
-              `No confirmed ${v.txKind} found${quest.frequency === "daily" ? " today" : ""}. Complete one, then verify again.`,
-            )
-          }
+          onClick={() => {
+            const tx = findVerifyingTx(quest, txs, Date.now());
+            if (!tx) {
+              toast.error("Not verified yet", {
+                description: `No confirmed ${v.txKind} found${quest.frequency === "daily" ? " today" : ""}. Complete one, then verify again.`,
+              });
+              return;
+            }
+            void verify({ id: tx.id, kind: tx.kind, status: tx.status, updatedAt: tx.updatedAt });
+          }}
         >
           {busy ? <Loader2 className="animate-spin" /> : <Check />} Verify
         </Button>
@@ -267,9 +283,15 @@ function QuestActions({
   return (
     <form
       className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        if (validUrl) onSubmit(url.trim());
+        if (!validUrl) return;
+        setBusy(true);
+        try {
+          await onSubmit(url.trim());
+        } finally {
+          setBusy(false);
+        }
       }}
     >
       <label className="sr-only" htmlFor={`sub-${quest.id}`}>
@@ -283,8 +305,8 @@ function QuestActions({
         placeholder={`${v.prompt} (https://…)`}
         className="quest-field h-8 min-w-0 px-2.5 text-xs placeholder:text-muted-foreground focus:border-lime/60 focus:outline-none sm:w-56"
       />
-      <Button type="submit" variant="action" className={actionBtn} disabled={!validUrl || isQuestAvailable(quest, entry, now) === false}>
-        Submit for review
+      <Button type="submit" variant="action" className={actionBtn} disabled={!validUrl || busy || isQuestAvailable(quest, entry, now) === false}>
+        {busy && <Loader2 className="animate-spin" />} Submit for review
       </Button>
     </form>
   );

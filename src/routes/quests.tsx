@@ -1,29 +1,38 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { DisplayNameDialog } from "@/components/zentra/quests/DisplayNameDialog";
 import { Leaderboard } from "@/components/zentra/quests/Leaderboard";
 import { LinkAccountDialog } from "@/components/zentra/quests/LinkAccountDialog";
 import { LoginPanel } from "@/components/zentra/quests/LoginPanel";
 import { ProgressPanel } from "@/components/zentra/quests/ProgressPanel";
 import { QuestBoard } from "@/components/zentra/quests/QuestBoard";
+import { useAccount } from "@/hooks/use-account";
+import { supabase } from "@/integrations/supabase/client";
 import { IS_SIMULATED } from "@/lib/zentra/env";
-import { inviteCodeFor, useQuestState } from "@/lib/zentra/quest-store";
+import { applyReferral, claimQuest, getQuestAccount, submitQuest, updateQuestProfile } from "@/lib/zentra/quest-service.functions";
 import {
   QUESTS,
-  completeQuest,
   completedQuestCount,
+  progressFromRecords,
   questById,
-  rankLeaderboard,
-  referralXp,
-  simulatedLeaderboard,
-  submitForReview,
   totalQuestXp,
+  type LedgerEvidence,
+  type LinkedAccounts,
+  type RankedEntry,
   type SocialPlatform,
 } from "@/lib/zentra/quests";
 import { useZentra } from "@/lib/zentra/store";
 
+const REF_CODE = /^ZNT-[A-Z0-9]{6}$/i;
+const PENDING_REF_KEY = "zentra.quests.ref";
+
 export const Route = createFileRoute("/quests")({
+  validateSearch: (s: Record<string, unknown>): { ref?: string } =>
+    typeof s["ref"] === "string" && REF_CODE.test(s["ref"]) ? { ref: s["ref"].toUpperCase() } : {},
   head: () => ({
     meta: [
       { title: "Quests — Earn XP for ZNT | ZENTRA Finance" },
@@ -40,56 +49,140 @@ export const Route = createFileRoute("/quests")({
   component: Quests,
 });
 
+const errText = (e: unknown) => (e instanceof Error ? e.message : "Please try again.");
+
 function Quests() {
   const { session, state, setConnectOpen } = useZentra();
-  const partyId = session?.partyId ?? null;
-  const { progress, updateProgress, linked, setLinked } = useQuestState(partyId);
+  const { user, ready } = useAccount();
+  const { ref } = Route.useSearch();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const fetchAccount = useServerFn(getQuestAccount);
+  const claim = useServerFn(claimQuest);
+  const submitFn = useServerFn(submitQuest);
+  const updateProfile = useServerFn(updateQuestProfile);
+  const applyRef = useServerFn(applyReferral);
   const [linkPlatform, setLinkPlatform] = useState<SocialPlatform | null>(null);
-  const [board, setBoard] = useState(() => (IS_SIMULATED ? simulatedLeaderboard() : []));
+  const [editName, setEditName] = useState(false);
 
-  // Simulated "live" activity: a few explorers gain XP every few seconds.
-  useEffect(() => {
-    if (!IS_SIMULATED) return;
-    const id = setInterval(() => {
-      setBoard((b) =>
-        b.map((e, i) => (Math.random() < 0.04 && i < 60 ? { ...e, xp: e.xp + [10, 20, 50][Math.floor(Math.random() * 3)]! } : e)),
-      );
-    }, 6000);
-    return () => clearInterval(id);
-  }, []);
+  const accountQuery = useQuery({
+    queryKey: ["quest-account", user?.id],
+    queryFn: () => fetchAccount(),
+    enabled: !!user,
+  });
+  const boardQuery = useQuery({
+    queryKey: ["quest-leaderboard", user?.id ?? "anon"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("quest_leaderboard", { p_limit: 200 });
+      if (error) throw error;
+      return data;
+    },
+    enabled: ready,
+    refetchInterval: 20_000,
+  });
 
-  const friends: number[] = []; // referred friends' XP comes from the quest service
-  const refXp = referralXp(friends);
-  const questXp = totalQuestXp(progress);
-  const xp = questXp + refXp;
-
-  const ranked = useMemo(
-    () => rankLeaderboard(session && board.length ? [...board, { id: "you", name: "You", xp, isYou: true }] : board),
-    [board, session, xp],
+  const account = user ? accountQuery.data : undefined;
+  const refresh = useCallback(
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["quest-account"] }),
+        queryClient.invalidateQueries({ queryKey: ["quest-leaderboard"] }),
+      ]),
+    [queryClient],
   );
-  const yourRank = session && xp > 0 ? (ranked.find((e) => e.isYou)?.rank ?? null) : null;
 
-  const complete = (id: string) => {
-    const q = questById(id);
-    if (q) updateProgress((p) => completeQuest(p, q, Date.now()));
-  };
+  useEffect(() => {
+    if (accountQuery.error) toast.error("Couldn't load your quest progress", { description: errText(accountQuery.error) });
+  }, [accountQuery.error]);
 
-  const submit = (id: string, url: string) => {
+  // Remember an invite code from ?ref= until the visitor has an account, then apply it once.
+  useEffect(() => {
+    if (ref) localStorage.setItem(PENDING_REF_KEY, ref);
+  }, [ref]);
+  useEffect(() => {
+    if (!account || account.profile.referred) return;
+    const code = localStorage.getItem(PENDING_REF_KEY);
+    if (!code) return;
+    localStorage.removeItem(PENDING_REF_KEY);
+    if (code === account.profile.invite_code) return;
+    applyRef({ data: { code } })
+      .then(({ result }) => {
+        if (result === "applied") {
+          toast.success("Invite code applied", { description: "Your friend earns 10% of the quest XP you collect." });
+          void refresh();
+        }
+      })
+      .catch(() => {});
+  }, [account, applyRef, refresh]);
+
+  // Keep the connected wallet's party ID on the account.
+  useEffect(() => {
+    if (!account || !session || account.profile.wallet_party_id === session.partyId) return;
+    updateProfile({ data: { wallet_party_id: session.partyId } })
+      .then(() => queryClient.invalidateQueries({ queryKey: ["quest-account"] }))
+      .catch(() => {});
+  }, [account, session, updateProfile, queryClient]);
+
+  const progress = useMemo(() => (account ? progressFromRecords(account.claims, account.submissions) : {}), [account]);
+  const linked: LinkedAccounts = { x: account?.profile.x_handle ?? null, telegram: account?.profile.telegram_handle ?? null };
+
+  const rows = boardQuery.data ?? [];
+  const me = user ? rows.find((r) => r.is_you) : undefined;
+  const refXp = Number(me?.referral_xp ?? 0);
+  const friends = Number(me?.friends ?? 0);
+  const xp = totalQuestXp(progress) + refXp;
+  const ranked = useMemo<RankedEntry[]>(
+    () =>
+      rows
+        .filter((r) => Number(r.xp) > 0)
+        .map((r) => ({ id: `rank-${r.rank}`, name: r.display_name, xp: Number(r.xp), rank: Number(r.rank), isYou: r.is_you })),
+    [rows],
+  );
+  const yourRank = me && xp > 0 ? Number(me.rank) : null;
+
+  const signIn = () => void navigate({ to: "/auth", search: { redirect: "/quests" } });
+
+  const complete = async (id: string, tx?: LedgerEvidence) => {
     const q = questById(id);
     if (!q) return;
-    updateProgress((p) => submitForReview(p, q, url, Date.now()));
-    toast.message("Submitted for review", { description: q.title });
-    if (IS_SIMULATED) {
-      // Simulated reviewer approves after a short delay so the flow can be exercised end to end.
-      setTimeout(() => {
-        updateProgress((p) => {
-          const e = p[id];
-          if (e?.status !== "pending_review") return p;
-          const { [id]: _drop, ...rest } = p;
-          return completeQuest(rest, q, Date.now(), e.submission);
+    try {
+      const res = await claim({ data: { questId: id, tx } });
+      if (res.ok) {
+        toast.success(`+${res.xp} XP earned`, {
+          description: `${q.title} · saved to your account${res.simulated ? " · simulated verification" : ""}`,
         });
-        toast.success(`+${q.xp} XP earned`, { description: `${q.title} · simulated review approved` });
-      }, 3500);
+        await refresh();
+      } else {
+        toast.error("Not verified yet", { description: res.reason });
+      }
+    } catch (e) {
+      toast.error("Couldn't save your XP", { description: errText(e) });
+    }
+  };
+
+  const submit = async (id: string, url: string) => {
+    const q = questById(id);
+    if (!q) return;
+    try {
+      const res = await submitFn({ data: { questId: id, url } });
+      if (res.ok) {
+        toast.message("Submitted for review", { description: `${q.title} · XP is added once the ZENTRA team approves it` });
+        await refresh();
+      } else toast.error("Couldn't submit", { description: res.reason });
+    } catch (e) {
+      toast.error("Couldn't submit", { description: errText(e) });
+    }
+  };
+
+  const setLinked = async (p: SocialPlatform, handle: string | null) => {
+    const name = p === "x" ? "X" : "Telegram";
+    try {
+      await updateProfile({ data: p === "x" ? { x_handle: handle } : { telegram_handle: handle } });
+      await refresh();
+      if (handle) toast.success(`${name} linked as @${handle}`, { description: "Simulated account link · saved to your account" });
+      else toast.message(`${name} account unlinked`);
+    } catch (e) {
+      toast.error(`Couldn't update ${name}`, { description: errText(e) });
     }
   };
 
@@ -99,14 +192,13 @@ function Quests() {
       <div className="relative mx-auto w-full max-w-[1120px] space-y-2.5 px-3 pb-10 pt-4 sm:px-6">
         <h1 className="sr-only">ZENTRA Quests</h1>
         <LoginPanel
+          account={!ready ? undefined : !user ? null : account ? { displayName: account.profile.display_name } : undefined}
           session={session}
           linked={linked}
           onConnectWallet={() => setConnectOpen(true)}
+          onEditName={() => setEditName(true)}
           onLink={setLinkPlatform}
-          onUnlink={(p) => {
-            setLinked(p, null);
-            toast.message(`${p === "x" ? "X" : "Telegram"} account unlinked`);
-          }}
+          onUnlink={(p) => void setLinked(p, null)}
         />
         <ProgressPanel
           xp={xp}
@@ -114,23 +206,25 @@ function Quests() {
           completed={completedQuestCount(progress)}
           total={QUESTS.length}
           referralXp={refXp}
-          friends={friends.length}
-          inviteCode={partyId ? inviteCodeFor(partyId) : null}
+          friends={friends}
+          inviteCode={account?.profile.invite_code ?? null}
         />
 
         <div className="grid gap-4 pt-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-3">
           <QuestBoard
             progress={progress}
+            signedIn={!!user && !!account}
             hasWallet={!!session}
             linked={linked}
             txs={state.txs}
+            onSignIn={signIn}
             onConnectWallet={() => setConnectOpen(true)}
             onLink={setLinkPlatform}
             onComplete={complete}
             onSubmit={submit}
           />
           <div className="lg:pt-[1px]">
-            <Leaderboard entries={ranked} live={IS_SIMULATED} />
+            <Leaderboard entries={ranked} live simulated={IS_SIMULATED} loading={boardQuery.isLoading} />
           </div>
         </div>
       </div>
@@ -139,9 +233,23 @@ function Quests() {
         platform={linkPlatform}
         onClose={() => setLinkPlatform(null)}
         onLink={(p, handle) => {
-          setLinked(p, handle);
           setLinkPlatform(null);
-          toast.success(`${p === "x" ? "X" : "Telegram"} linked as @${handle}`, { description: "Simulated account link" });
+          void setLinked(p, handle);
+        }}
+      />
+      <DisplayNameDialog
+        open={editName}
+        current={account?.profile.display_name ?? ""}
+        onClose={() => setEditName(false)}
+        onSave={async (name) => {
+          try {
+            await updateProfile({ data: { display_name: name } });
+            await refresh();
+            setEditName(false);
+            toast.success("Display name updated");
+          } catch (e) {
+            toast.error("Couldn't update name", { description: errText(e) });
+          }
         }}
       />
     </div>

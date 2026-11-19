@@ -39,7 +39,7 @@ export function LinkAccountDialog({
               </DialogTitle>
               <DialogDescription className="text-xs text-text-2">
                 In production this opens {NAME[platform]}'s own sign-in so we can verify quests against your account. In
-                development, enter a handle to simulate the link.
+                development, enter a handle to simulate the link. It's saved to your ZENTRA account.
               </DialogDescription>
             </DialogHeader>
             <label className="mt-4 block text-xs text-text-2" htmlFor="link-handle">
